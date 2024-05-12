@@ -34,20 +34,32 @@ namespace img_lib {
         int number_colors_used;
         int number_colors_;
     }
-    PACKED_STRUCT_END
+        PACKED_STRUCT_END
+
+    const int number_colors = 3;
+    const int align = 4;
+
 
 // функция вычисления отступа по ширине
-static int GetBMPStride(int w) {
-    return 4 * ((w * 3 + 3) / 4);
-}
+    static int GetBMPStride(int w) {
+        return align * ((w * number_colors + number_colors) / align);
+    }
 
 // напишите эту функцию
     bool SaveBMP(const Path& file, const Image& image) {
         ofstream out(file, ios::binary);
         unsigned int sum_size = sizeof(BitmapFileHeader) + sizeof(BitmapInfoHeader) + static_cast<unsigned int>(GetBMPStride(image.GetWidth()) * image.GetHeight());
         unsigned int number_bytes_in_data = GetBMPStride(image.GetWidth()) * image.GetHeight();
+        uint16_t number_planes = 1;
+        uint16_t number_bits_per_pixel = 24;
+        unsigned int compres_type = 0;
+        int gorizont_def = 11811;
+        int vertical_def = 11811;
+        int number_colors_used = 0;
+        int number_colors_ = 0x1000000;
+
         BitmapFileHeader bfh{ 'B' , 'M', sum_size, 0, sizeof(BitmapFileHeader) + sizeof(BitmapInfoHeader) };
-        BitmapInfoHeader bih{ sizeof(BitmapInfoHeader), image.GetWidth(),  image.GetHeight() , 1, 24, 0, number_bytes_in_data, 11811, 11811, 0, 0x1000000 };
+        BitmapInfoHeader bih{ sizeof(BitmapInfoHeader), image.GetWidth(),  image.GetHeight() , number_planes, number_bits_per_pixel, compres_type, number_bytes_in_data, gorizont_def, vertical_def, number_colors_used, number_colors_ };
 
         out.write(reinterpret_cast<const char*>(&bfh), sizeof(bfh));
         out.write(reinterpret_cast<const char*>(&bih), sizeof(bih));
@@ -74,8 +86,8 @@ static int GetBMPStride(int w) {
         ifstream ifs(file, ios::binary);
         BitmapFileHeader bfh;
         BitmapInfoHeader bih;
-        ifs.read(reinterpret_cast<char*>(&bfh), sizeof(bfh));
-        ifs.read(reinterpret_cast<char*>(&bih), sizeof(bih));
+        assert(ifs.read(reinterpret_cast<char*>(&bfh), sizeof(bfh)));
+        assert(ifs.read(reinterpret_cast<char*>(&bih), sizeof(bih)));
         const int w = bih.width;
         const int h = bih.height;
         int width_size = GetBMPStride(w);
