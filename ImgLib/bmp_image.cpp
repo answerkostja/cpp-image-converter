@@ -86,10 +86,35 @@ namespace img_lib {
         ifstream ifs(file, ios::binary);
         BitmapFileHeader bfh;
         BitmapInfoHeader bih;
-        assert(ifs.read(reinterpret_cast<char*>(&bfh), sizeof(bfh)));
-        assert(ifs.read(reinterpret_cast<char*>(&bih), sizeof(bih)));
+        if (!ifs.read(reinterpret_cast<char*>(&bfh), sizeof(bfh))) {
+            return Image{};
+        };
+        
+        if (!ifs.read(reinterpret_cast<char*>(&bih), sizeof(bih))) {
+            return Image{};
+        };
         const int w = bih.width;
         const int h = bih.height;
+        unsigned int sum_size = sizeof(BitmapFileHeader) + sizeof(BitmapInfoHeader) + GetBMPStride(w) * h;
+        if (bfh.signature_b != 'B' || bfh.sigmature_m != 'M' || bfh.sum_size != sum_size || bfh.reserved != 0 || bfh.header_size != sizeof(BitmapFileHeader) + sizeof(BitmapInfoHeader)) {
+            return Image{};
+        }
+        
+        unsigned int number_bytes_in_data = GetBMPStride(w) * h;
+        uint16_t number_planes = 1;
+        uint16_t number_bits_per_pixel = 24;
+        unsigned int compres_type = 0;
+        int gorizont_def = 11811;
+        int vertical_def = 11811;
+        int number_colors_used = 0;
+        int number_colors_ = 0x1000000;
+
+        if (bih.number_bytes_in_data != number_bytes_in_data || bih.number_planes != number_planes || bih.number_bits_per_pixel != number_bits_per_pixel ||
+            bih.compres_type != compres_type || bih.gorizont_def != gorizont_def || bih.vertical_def != vertical_def || bih.number_colors_used != number_colors_used || bih.number_colors_ != number_colors_) {
+            return Image{};
+        }
+
+        
         int width_size = GetBMPStride(w);
         Image result(w, h, Color::Black());
         std::vector<char> buff(width_size);
